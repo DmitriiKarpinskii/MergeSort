@@ -1,2 +1,11 @@
 /.idea/
 /MergeSortFiles.iml
+/out
+
+*.class
+*.txt
+*.docx
+*.war
+*.rar
+*.jar
+
