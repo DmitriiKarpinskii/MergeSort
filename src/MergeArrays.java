@@ -15,7 +15,7 @@ public class MergeArrays {
         Message message = verification.check(); //проверка на корректность переданных аргументов
 
         if (message.getStatus()) { // Если проверка пройдена , начинается выполнение программы.
-            // Если нет, выбрасыватся сообщение с информацией об ошибки.
+//             Если нет, выбрасыватся сообщение с информацией об ошибке.
 
             String[] argsForVerification = new String[verification.getArguments().size()];
             argsForVerification = verification.getArguments().toArray(argsForVerification);
@@ -27,9 +27,8 @@ public class MergeArrays {
             List<BoxStream> streams = new LinkedList<>();
             List<String> peekValues = new LinkedList<>();
 
-            HashMap<BoxStream,String> mapStreams = new HashMap<>();
 
-            //Открываем для каждого входного файла поток и добавляем его в лист.
+//            Открываем для каждого входного файла поток и добавляем его в лист, если он не пустой.
             for (String fileName : fileNames) {
                 File file = new File(fileName);
 
@@ -40,7 +39,6 @@ public class MergeArrays {
                         streams.add(boxStream);
                         peekValues.add("");
 
-                        mapStreams.put(boxStream,""); // **********
                     }
                 } catch (FileNotFoundException e) {
                     System.out.println(new Message(false, "Файл (входной) не найден. " + fileName));
@@ -53,52 +51,46 @@ public class MergeArrays {
             boolean validValue = false;
 
             while (true) {
-                //После открытия потоков берем из листа по очереди каждый поток и считываем из него строку.
-                // for(Map.Entry streams : mapStreams.entrySet()) **********************************
+//                После открытия потоков берем из листа по очереди каждый поток и считываем из него строку.
                 for (int i = 0; i < streams.size(); i++) {
-                    System.out.println("==================== Текущий стрим " + (i + 1) + "====================");
-
-                    //
                     currentStream = streams.get(i);
-
                     try {
-                        System.out.println("Готов? - " + currentStream.getReader().ready() + " Читаем следующий элемент? - " + currentStream.isGetNext());
+//                        Если поток готов к чтению и, если разрешено читать слуд. элемент,
                         if (currentStream.getReader().ready() && currentStream.isGetNext()) {
+//                            то читаем строку.
                             currentStream.read();
+
                             validValue = checkValidValue(currentStream.getCurrentValue(), currentStream.getLastValue(), type);
-                            System.out.println(currentStream.getLastValue() + " >> " + currentStream.getCurrentValue());
+//                            Проверяем на валидность
                             if (validValue) {
-                                System.out.println("Добавляем в лист: " + currentStream.getCurrentValue());
+//                            и записываем в массив пиковых значений.
                                 peekValues.set(i, currentStream.getCurrentValue());
                             } else {
+//                                если в потоке оказался невалидный элемент, то пересатем рабоать с этим потоком.
                                 currentStream.close();
                                 peekValues.remove(i);
                                 streams.remove(i);
                                 i--;
                             }
                         }
-
                     } catch (IOException e) {
                         System.out.println(new Message(false, "Ошибка при чтении входного файла"));
                     }
                 }
-
+//                если вдруг оказалось, что масивый пиковых значений пуст, например, если все файлы начинаются с невалидных элементов. То прекращаем цикл.
+                if (peekValues.size() == 0) {
+                    break;
+                }
+//                  Открываем поток на запись
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileNameOut, true))) {
-
-                    String min = findMin(peekValues, type); // находим минимальное значение из считанных
+//                  Находим минимальное значение из считанных.
+                    String min = findMin(peekValues, type);
                     String value;
-
-                    System.out.println("Пиковые значения после прохода стримов:  " + peekValues);
                     for (int i = 0; i < peekValues.size(); i++) {
-
-
-                        System.out.println(i + " - size : " + peekValues.size());
                         value = peekValues.get(i);
-
                         if (value.equals(min)) {
-
-                            System.out.println("Пишем мин. в файл " + value);
-                            writer.write(value); // записываем минимальное значение в результирующий файл
+//                             Записываем минимальное значение в результирующий файл
+                            writer.write(value);
                             writer.newLine();
                             writer.flush();
 
@@ -108,28 +100,26 @@ public class MergeArrays {
                                 i--;
                                 continue;
                             }
-
+//                            Устанваливаем разрешение на считывание след. элемента в потоке.
                             streams.get(i).setGetNext(true);
                         } else
+//                            Устанваливаем запрет на считывание след. элемента в потоке. Если, к примеру, считанный элемент не был записан в результирующий файл.
                             streams.get(i).setGetNext(false);
                     }
-
+//                  Перестаем рабоать с потоками, после того как не останется открытых
                     if (streams.size() == 0) {
                         break;
                     }
-
-
                 } catch (IOException e) {
                     System.out.println(new Message(false, "Ошибка записи в результирующий файл"));
                     System.exit(0);
                 }
             }
-
-            if (order.equals("-d")) { //если передан аргумент -d , то дополнительно сортируем выходной файл по убыванию.
-
+//         Если передан аргумент -d , то дополнительно сортируем выходной файл по убыванию.
+            if (order.equals("-d")) {
                 descending(fileNameOut);
             }
-            System.out.println("Программа выполнена.");
+            System.out.println("Программа завершина.");
         } else {
             System.out.println(message);
             System.exit(0);
@@ -182,7 +172,6 @@ public class MergeArrays {
                 } catch (NumberFormatException e) {
                     isValid = false;
                     System.out.println("Ошибка при преобразовании значения. Строка >" + currentValue + "< содержит для [Integer] недопусимые символы.");
-                    e.printStackTrace();
                 }
             }
             break;
@@ -223,29 +212,20 @@ public class MergeArrays {
         try {
             Path dir = Files.createTempDirectory(pathDir, "tmp-");
             Path pathTmpOut = Files.createTempFile(pathFileIn.getParent(), "tmp-", ".tmp");
-
-
             try (FileReader fr = new FileReader(fileNameIn);
                  BufferedReader reader = new BufferedReader(fr)
-
             ) {
                 while (reader.ready()) {
-
                     while (reader.ready() && bufferStr.size() < 10000) {
                         String line = reader.readLine();
                         bufferStr.add(line);
                     }
-
                     Path tempFile = Files.createTempFile(dir, "tmp-", ".tmp");
-
-
                     try (
                             FileWriter fileWrTemp = new FileWriter(tempFile.toAbsolutePath().toString());
                             BufferedWriter writerTmpFiles = new BufferedWriter(fileWrTemp)
                     ) {
-
                         while (bufferStr.size() != 0) {
-
                             writerTmpFiles.write(bufferStr.remove(bufferStr.size() - 1));
                             writerTmpFiles.newLine();
                         }
@@ -254,43 +234,33 @@ public class MergeArrays {
                         e.printStackTrace();
                     }
                 }
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
             try (FileOutputStream fos = new FileOutputStream(pathTmpOut.toAbsolutePath().toString());
                  BufferedOutputStream bos = new BufferedOutputStream(fos)
             ) {
                 while (!stack.empty()) {
-
                     Path path = stack.pop();
                     try (FileInputStream is = new FileInputStream(path.toAbsolutePath().toString());
                          BufferedInputStream bis = new BufferedInputStream(is)) {
-
                         byte[] buffer = new byte[bis.available()];
                         bis.read(buffer);
                         bos.write(buffer);
                         bis.close();
                         Files.delete(path);
                     } catch (IOException e) {
-
                     }
-
                 }
                 Files.delete(dir);
-
             } catch (IOException e) {
                 System.out.println(new Message(false, "Ошибка записи/чтения временого файла"));
             }
-
             Files.move(pathTmpOut, pathFileIn, StandardCopyOption.REPLACE_EXISTING);
-
         } catch (IOException e) {
             System.out.println("Ошибка во время создания временного файла");
             e.printStackTrace();
             System.exit(0);
         }
     }
-
 }
